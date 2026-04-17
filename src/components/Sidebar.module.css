@@ -16,7 +16,7 @@
 }
 
 .brand h2 {
-  font-size: 1.8rem;
+  font-size: 1.8  rem;
   background: linear-gradient(90deg, var(--accent-blue), var(--text-highlight));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

@@ -25,6 +25,8 @@ export default function TaskBoard({ userId, userEmail }: { userId: string; userE
   // UI State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [draggedOverColumn, setDraggedOverColumn] = useState<Task['status'] | null>(null);
+
   
   // Filtering
   const [filterPriority, setFilterPriority] = useState<string>('All');
@@ -241,25 +243,33 @@ export default function TaskBoard({ userId, userEmail }: { userId: string; userE
     e.preventDefault(); // Necessary to allow dropping
     e.dataTransfer.dropEffect = 'move';
   };
+
+  const onDragEnter = (e: React.DragEvent, status: Task['status']) => {
+    e.preventDefault();
+    setDraggedOverColumn(status);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    // Note: We don't always clear on leave to prevent flickering when moving over child elements.
+    // It will be cleared on drop or drag end.
+  };
   
   const onDrop = (e: React.DragEvent, status: Task['status']) => {
     e.preventDefault();
+    setDraggedOverColumn(null);
+
     if (draggedTaskId) {
-      const draggedTask = tasks.find(t => t.id === draggedTaskId);
-      if (draggedTask) {
-        const statusOrder: Record<Task['status'], number> = {
-          'Pending': 0,
-          'In Progress': 1,
-          'Completed': 2,
-        };
-        // Only allow forward moves (never backward)
-        if (statusOrder[status] > statusOrder[draggedTask.status]) {
-          updateTaskStatus(draggedTaskId, status);
-        }
-      }
+      updateTaskStatus(draggedTaskId, status);
       setDraggedTaskId(null);
     }
   };
+
+  const onDragEnd = () => {
+    setDraggedTaskId(null);
+    setDraggedOverColumn(null);
+  };
+
 
   const archiveTask = async (id: string) => {
     syncMock(tasks.map(t => t.id === id ? { ...t, archived: true } : t));
@@ -284,8 +294,10 @@ export default function TaskBoard({ userId, userEmail }: { userId: string; userE
     
     return (
       <div 
-        className={`${styles.column} glass-panel`}
+        className={`${styles.column} glass-panel ${draggedOverColumn === status ? styles.dragOver : ''}`}
         onDragOver={onDragOver}
+        onDragEnter={(e) => onDragEnter(e, status)}
+        onDragLeave={onDragLeave}
         onDrop={(e) => onDrop(e, status)}
       >
         <div className={styles.columnHeader}>
@@ -311,6 +323,8 @@ export default function TaskBoard({ userId, userEmail }: { userId: string; userE
                 onDelete={deleteTask}
                 onEdit={openEditModal}
                 onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+                isDragging={draggedTaskId === task.id}
                 onArchive={archiveTask}
               />
             ))

@@ -9,11 +9,23 @@ interface TaskCardProps {
   onDelete: (id: string) => void;
   onEdit: (task: Task) => void;
   onDragStart?: (e: React.DragEvent, id: string) => void;
+  onDragEnd?: () => void;
   onArchive?: (id: string) => void;
+  isDragging?: boolean;
   index: number;
 }
 
-export default function TaskCard({ task, onStatusChange, onDelete, onEdit, onDragStart, onArchive, index }: TaskCardProps) {
+/**
+ * 🃏 TaskCard Component
+ * Displays an individual task with its title, priority, dates, and actions.
+ * It handles the 'Visual' part of the Drag and Drop process.
+ */
+export default function TaskCard({ task, onStatusChange, onDelete, onEdit, onDragStart, onDragEnd, onArchive, isDragging, index }: TaskCardProps) {
+  
+  /**
+   * 🎨 getPriorityColor
+   * Returns a CSS variable color based on the task's importance.
+   */
   const getPriorityColor = () => {
     switch (task.priority) {
       case 'High': return 'var(--accent-pink)';
@@ -23,6 +35,10 @@ export default function TaskCard({ task, onStatusChange, onDelete, onEdit, onDra
     }
   };
 
+  /**
+   * 🏷️ Status Badge Class
+   * Determines the color of the [Pending/In Progress/Completed] badge.
+   */
   const statusClass = task.status === 'Pending' ? 'status-todo' : task.status === 'In Progress' ? 'status-in_progress' : 'status-done';
 
   const handleNextStatus = () => {
@@ -32,15 +48,30 @@ export default function TaskCard({ task, onStatusChange, onDelete, onEdit, onDra
 
   const priorityClass = `priority-${task.priority.toLowerCase()}`;
   
+  /**
+   * ⏰ isOverdue Logic
+   * Compares the due date to "Now". If it's in the past and NOT completed, mark as overdue.
+   */
   const isOverdue = new Date(task.due_date) < new Date() && task.status !== 'Completed';
+
+  const isDraggable = !!onDragStart;
 
   return (
     <div 
       className={`${styles.card} animate-fade-in ${styles[priorityClass]}`} 
-      style={{ animationDelay: `${index * 0.05}s` }}
-      draggable={!!onDragStart && task.status !== 'Completed'}
-      onDragStart={(e) => onDragStart && task.status !== 'Completed' ? onDragStart(e, task.id) : undefined}
+      style={{
+        animationDelay: `${index * 0.05}s`,
+        // 🎞️ Visual Drag Feedback: Fades the card being held
+        opacity: isDragging ? 0.4 : 1,
+        transform: isDragging ? 'scale(0.97)' : undefined,
+        cursor: isDragging ? 'grabbing' : 'grab',
+        transition: isDragging ? 'opacity 0.15s, transform 0.15s' : undefined,
+      }}
+      draggable={isDraggable}
+      onDragStart={(e) => isDraggable ? onDragStart!(e, task.id) : undefined}
+      onDragEnd={() => onDragEnd && onDragEnd()}
     >
+      {/* --- CARD CONTENT --- */}
       <div className={styles.cardHeader}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <h3 className={styles.title}>{task.title}</h3>
@@ -67,22 +98,21 @@ export default function TaskCard({ task, onStatusChange, onDelete, onEdit, onDra
           </div>
         </div>
         
+        {/* --- BUTTONS --- */}
         <div className={styles.actions}>
-          {task.status !== 'Completed' && (
-            <button className={styles.actionBtn} onClick={() => onEdit(task)} title="Edit task">
-              <Edit size={16} />
-            </button>
-          )}
-          {task.status !== 'Completed' && (
-            <button 
-              className={styles.actionBtn} 
-              onClick={handleNextStatus}
-              title="Move forward"
-              style={{ color: 'var(--primary)' }}
-            >
-              <CheckCircle size={16} />
-            </button>
-          )}
+          <button className={styles.actionBtn} onClick={() => onEdit(task)} title="Edit task">
+            <Edit size={16} />
+          </button>
+          
+          <button 
+            className={styles.actionBtn} 
+            onClick={handleNextStatus}
+            title="Move forward"
+            style={{ color: 'var(--primary)', display: task.status === 'Completed' ? 'none' : 'block' }}
+          >
+            <CheckCircle size={16} />
+          </button>
+
           {task.status === 'Completed' && onArchive && (
             <button 
               className={styles.actionBtn} 
@@ -93,6 +123,7 @@ export default function TaskCard({ task, onStatusChange, onDelete, onEdit, onDra
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
             </button>
           )}
+
           <button 
             className={styles.actionBtn} 
             onClick={() => onDelete(task.id)}

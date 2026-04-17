@@ -12,6 +12,7 @@ export default function Auth({ onLogin }: { onLogin: (userId: string, email: str
   const [error, setError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [supabaseError, setSupabaseError] = useState(false);
   const [registered, setRegistered] = useState(false);
 
   // Verification step state
@@ -21,19 +22,38 @@ export default function Auth({ onLogin }: { onLogin: (userId: string, email: str
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMsg, setResendMsg] = useState('');
 
+  // Password Reset state
+  const [isReset, setIsReset] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+
   useEffect(() => {
     if (isMockMode) {
       const mockUser = localStorage.getItem('mockUserId');
       const mockEmail = localStorage.getItem('mockUserEmail');
       if (mockUser && mockEmail) onLogin(mockUser, mockEmail);
     } else {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) onLogin(session.user.id, session.user.email || '');
-      });
+      // Check connectivity — if this times out or errors, show a warning banner.
+      const timeout = setTimeout(() => setSupabaseError(true), 7000);
+
+      supabase.auth.getSession()
+        .then(({ data: { session } }) => {
+          clearTimeout(timeout);
+          setSupabaseError(false);
+          if (session?.user) onLogin(session.user.id, session.user.email || '');
+        })
+        .catch(() => {
+          clearTimeout(timeout);
+          setSupabaseError(true);
+        });
+
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         if (session?.user) onLogin(session.user.id, session.user.email || '');
       });
-      return () => subscription.unsubscribe();
+      return () => {
+        clearTimeout(timeout);
+        subscription.unsubscribe();
+      };
     }
   }, [onLogin]);
 
@@ -184,6 +204,37 @@ export default function Auth({ onLogin }: { onLogin: (userId: string, email: str
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailVal) return;
+    setLoading(true);
+    setError('');
+
+    if (isMockMode) {
+      setTimeout(() => {
+        setResetSuccess(true);
+        setLoading(false);
+      }, 500);
+      return;
+    }
+
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(emailVal, {
+        redirectTo: window.location.origin + '/dashboard',
+      });
+      if (resetError) {
+        setError(resetError.message);
+      } else {
+        setResetSuccess(true);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset link.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   // ── Registered (email confirmation required) screen ──
   if (registered) {
     return (
@@ -286,9 +337,83 @@ export default function Auth({ onLogin }: { onLogin: (userId: string, email: str
     );
   }
 
+  // ── Password Reset screen ──
+  if (isReset) {
+    return (
+      <div className={styles.authContainer}>
+        <div className={`${styles.authCard} glass-panel`}>
+          <div className={styles.authHeader}>
+            <Hexagon size={48} color="var(--accent-blue)" style={{ margin: '0 auto 10px' }} />
+            <h2>Reset Password</h2>
+            <p>Enter your email to receive a reset link</p>
+          </div>
+
+          {resetSuccess ? (
+            <div className={styles.successMsg}>
+              Password reset link has been sent to your email.
+            </div>
+          ) : (
+            <form className={styles.authForm} onSubmit={handleResetPassword}>
+              {error && <div className={styles.errorMsg}>{error}</div>}
+              
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <input 
+                  type="email" 
+                  className="form-input" 
+                  placeholder="you@example.com"
+                  value={emailVal}
+                  onChange={(e) => setEmailVal(e.target.value)}
+                  required
+                />
+              </div>
+
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
+                {loading ? 'Sending...' : 'Send Reset Link'}
+              </button>
+            </form>
+          )}
+
+          <div className={styles.toggleText}>
+            <button 
+              className={styles.toggleBtn} 
+              onClick={() => { setIsReset(false); setResetSuccess(false); setError(''); }}
+            >
+              ← Back to Sign In
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── Main login / sign-up form ──
+
   return (
     <div className={styles.authContainer}>
+      {supabaseError && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0,
+          background: 'rgba(239,68,68,0.92)',
+          backdropFilter: 'blur(8px)',
+          color: '#fff',
+          padding: '12px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          zIndex: 9999,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+        }}>
+          <span>⚠️</span>
+          <span>
+            <strong>Cannot connect to Supabase.</strong> The project URL or anon key in{' '}
+            <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: '4px' }}>.env.local</code>{' '}
+            is invalid or the project has been deleted. Update your credentials and restart the dev server.
+          </span>
+        </div>
+      )}
       <div className={`${styles.authCard} glass-panel`}>
         <div className={styles.authHeader}>
           <Hexagon size={48} color="var(--accent-blue)" style={{ margin: '0 auto 10px' }} />
@@ -324,13 +449,25 @@ export default function Auth({ onLogin }: { onLogin: (userId: string, email: str
             />
           </div>
 
+          {isLogin && (
+            <div className={styles.forgotPasswordContainer}>
+              <button 
+                type="button" 
+                className={styles.forgotPasswordLink}
+                onClick={() => { setIsReset(true); setError(''); }}
+              >
+                Forgot Password?
+              </button>
+            </div>
+          )}
+
+
           {!isLogin && (
             <div className="form-group" style={{ marginBottom: '10px' }}>
               <label className="form-label">Confirm Password</label>
               <input 
                 type="password" 
                 className="form-input" 
-                style={{ backgroundColor: '#ffffff' }}
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError(''); }}

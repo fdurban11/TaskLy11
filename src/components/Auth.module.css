@@ -71,3 +71,36 @@
   border-radius: var(--radius-sm);
   border: 1px solid rgba(216, 17, 89, 0.2);
 }
+
+.successMsg {
+  color: var(--primary-hover);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 10px;
+  background: rgba(69, 162, 158, 0.1);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(69, 162, 158, 0.2);
+}
+
+.forgotPasswordContainer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -10px;
+  margin-bottom: 5px;
+}
+
+.forgotPasswordLink {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.forgotPasswordLink:hover {
+  color: var(--accent-blue);
+  text-decoration: underline;
+}
+
