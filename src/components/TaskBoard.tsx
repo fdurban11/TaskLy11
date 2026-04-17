@@ -47,24 +47,78 @@ export default function TaskBoard({ userId, userEmail }: { userId: string; userE
   // Reminder alert checker
   useEffect(() => {
     if (tasks.length === 0) return;
+    let isProcessing = false;
+
     const interval = setInterval(() => {
+      if (isProcessing) return;
+      isProcessing = true;
+
       const now = new Date();
-      tasks.forEach(task => {
+      let hasChanges = false;
+      const updatedTasks = [...tasks];
+
+      updatedTasks.forEach((task, index) => {
         if (task.status === 'Completed' || task.archived) return;
-        const due = new Date(task.due_date);
+
+        // Ensure accurate target time
+        const dueDateStr = task.due_time 
+          ? `${task.due_date.split('T')[0]}T${task.due_time}:00` 
+          : task.due_date;
+        const due = new Date(dueDateStr);
         const timeDiff = due.getTime() - now.getTime();
         
-        if (timeDiff > 0 && timeDiff <= 3600000) {
-           // UI Notification
+        let typeToTrigger: string | null = null;
+        let flagKey: keyof Task | null = null;
+        
+        if (timeDiff <= -24 * 60 * 60 * 1000 && !task.reminder_overdue_sent) {
+           typeToTrigger = 'reminder_overdue';
+           flagKey = 'reminder_overdue_sent';
+        } else if (timeDiff <= 0 && timeDiff > -24 * 60 * 60 * 1000 && !task.reminder_due_sent) {
+           typeToTrigger = 'reminder_due';
+           flagKey = 'reminder_due_sent';
+        } else if (timeDiff > 0 && timeDiff <= 60 * 60 * 1000 && !task.reminder_1h_sent) {
+           typeToTrigger = 'reminder_1h';
+           flagKey = 'reminder_1h_sent';
            if (!notifications.includes(task.id)) {
               setNotifications(prev => [...prev, task.id]);
            }
-           // Server handles email reminders via /api/reminders/check
+        } else if (timeDiff > 60 * 60 * 1000 && timeDiff <= 24 * 60 * 60 * 1000 && !task.reminder_24h_sent) {
+           typeToTrigger = 'reminder_24h';
+           flagKey = 'reminder_24h_sent';
+        }
+
+        if (typeToTrigger && flagKey) {
+          fetch('/api/reminders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              taskId: task.id,
+              to: userEmail,
+              taskTitle: task.title,
+              description: task.description,
+              assignedDate: task.assigned_date,
+              dueDate: task.due_date,
+              dueTime: task.due_time,
+              priority: task.priority,
+              status: task.status,
+              type: typeToTrigger
+            })
+          }).catch(console.error);
+
+          // Mark locally immediately to prevent fast duplicate triggers
+          (updatedTasks[index] as any)[flagKey] = true;
+          hasChanges = true;
         }
       });
+
+      if (hasChanges) {
+        setTasks(updatedTasks);
+      }
+      isProcessing = false;
     }, 60000); // Check every minute
+    
     return () => clearInterval(interval);
-  }, [tasks, notifications]);
+  }, [tasks, notifications, userEmail]);
 
   const fetchTasks = async () => {
     setLoading(true);

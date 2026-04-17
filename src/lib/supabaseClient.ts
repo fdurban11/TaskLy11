@@ -39,6 +39,8 @@ export type Task = {
   due_time?: string;
   reminder_24h_sent?: boolean;
   reminder_1h_sent?: boolean;
+  reminder_due_sent?: boolean;
+  reminder_overdue_sent?: boolean;
   archived?: boolean;
   created_at: string;
 }

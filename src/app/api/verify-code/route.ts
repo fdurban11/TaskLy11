@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+import { sendBrevoEmail } from '@/lib/brevo';
 
 // In-memory store: email -> { code, expiresAt }
 // NOTE: This resets on server restart. Suitable for development/single-instance.
@@ -9,19 +9,8 @@ function generateCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-function createTransporter() {
-  return nodemailer.createTransport({
-    host: process.env.MAIL_HOST,
-    port: Number(process.env.MAIL_PORT) || 587,
-    auth: {
-      user: process.env.MAIL_USERNAME,
-      pass: process.env.MAIL_PASSWORD,
-    },
-  });
-}
-
 async function sendVerificationEmail(to: string, code: string) {
-  const transporter = createTransporter();
+  const name = to.split('@')[0].charAt(0).toUpperCase() + to.split('@')[0].slice(1);
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -30,116 +19,107 @@ async function sendVerificationEmail(to: string, code: string) {
       <meta charset="utf-8">
       <style>
         body {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          background-color: #0f172a;
-          color: #e2e8f0;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          background-color: #f9fafb;
+          color: #111827;
           margin: 0;
           padding: 40px 20px;
         }
         .container {
-          max-width: 520px;
+          max-width: 500px;
           margin: 0 auto;
-          background-color: #1e293b;
-          border-radius: 16px;
+          background-color: #ffffff;
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
           overflow: hidden;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-          border: 1px solid #334155;
         }
         .header {
-          background: linear-gradient(135deg, #0ea5e9, #00e5cc);
-          padding: 32px 24px;
+          padding: 32px 32px 24px;
           text-align: center;
+          border-bottom: 1px solid #f3f4f6;
         }
         .header h1 {
           margin: 0;
-          color: #ffffff;
-          font-size: 22px;
-          font-weight: 700;
-          letter-spacing: 0.02em;
-        }
-        .header p {
-          margin: 6px 0 0;
-          color: rgba(255,255,255,0.8);
-          font-size: 14px;
+          color: #111827;
+          font-size: 20px;
+          font-weight: 600;
         }
         .content {
-          padding: 40px 32px;
+          padding: 32px;
           text-align: center;
         }
         .content p {
-          line-height: 1.6;
+          line-height: 1.5;
           font-size: 15px;
-          color: #94a3b8;
-          margin: 0 0 28px;
+          color: #4b5563;
+          margin: 0 0 24px;
         }
         .code-box {
-          background-color: #0f172a;
-          border: 2px solid #0ea5e9;
-          border-radius: 16px;
-          padding: 28px 20px;
-          margin: 0 auto 28px;
-          max-width: 280px;
+          background-color: #f3f4f6;
+          border-radius: 6px;
+          padding: 24px;
+          margin: 0 auto 24px;
+          max-width: 240px;
         }
         .code-label {
           font-size: 12px;
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: #64748b;
-          margin-bottom: 12px;
+          letter-spacing: 0.05em;
+          color: #6b7280;
+          margin-bottom: 8px;
         }
         .code {
-          font-size: 48px;
-          font-weight: 800;
-          letter-spacing: 0.18em;
-          color: #00e5cc;
-          font-family: 'Courier New', Courier, monospace;
+          font-size: 40px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          color: #111827;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         }
         .expiry {
           font-size: 13px;
-          color: #64748b;
-          margin-top: 0;
+          color: #9ca3af;
+          margin: 0;
         }
         .footer {
-          background-color: #0f172a;
-          padding: 20px;
+          padding: 24px;
           text-align: center;
-          border-top: 1px solid #1e293b;
+          background-color: #f9fafb;
+          border-top: 1px solid #f3f4f6;
         }
         .footer p {
           margin: 0;
-          color: #475569;
-          font-size: 13px;
+          color: #9ca3af;
+          font-size: 12px;
         }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <h1>🔐 Verify Your Email</h1>
-          <p>Taskly Account Verification</p>
+          <h1>Account Verification</h1>
         </div>
         <div class="content">
-          <p>Enter the verification code below to complete your Taskly account creation. This code expires in <strong style="color:#e2e8f0">10 minutes</strong>.</p>
+          <p>Hello <a href="mailto:${to}" style="color: #2563eb; font-weight: 700; text-decoration: none;">${name}</a>,</p>
+          <p>Please enter the verification code below to complete your Taskly registration. This code will expire in <strong>10 minutes</strong>.</p>
           <div class="code-box">
-            <div class="code-label">Your Verification Code</div>
+            <div class="code-label">Verification Code</div>
             <div class="code">${code}</div>
           </div>
-          <p class="expiry">If you did not request this, you can safely ignore this email.</p>
+          <p class="expiry">If you didn't request this, you can safely ignore this email.</p>
         </div>
         <div class="footer">
-          <p>Taskly Automated System &copy; ${new Date().getFullYear()}</p>
+          <p>Taskly &copy; ${new Date().getFullYear()}</p>
         </div>
       </div>
     </body>
     </html>
   `;
 
-  await transporter.sendMail({
-    from: `"${process.env.MAIL_FROM_NAME || 'Taskly'}" <${process.env.MAIL_FROM_ADDRESS}>`,
-    to,
-    subject: `🔐 Your Taskly Verification Code: ${code}`,
-    html: htmlContent,
+  await sendBrevoEmail({
+    to: [{ email: to, name: 'Taskly User' }],
+    subject: `Taskly Verification Code: ${code}`,
+    htmlContent: htmlContent,
   });
 }
 
