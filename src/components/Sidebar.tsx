@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
   const [theme, setTheme] = React.useState<'dark' | 'light'>('dark');
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
   const pathname = usePathname();
 
   React.useEffect(() => {
@@ -19,6 +20,20 @@ export default function Sidebar() {
       setTheme('dark');
       document.documentElement.setAttribute('data-theme', 'dark');
       localStorage.setItem('theme', 'dark');
+    }
+
+    // Check if user is logged in
+    if (isMockMode) {
+      const mockId = localStorage.getItem('mockUserId');
+      setIsLoggedIn(!!mockId);
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setIsLoggedIn(!!session?.user);
+      });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setIsLoggedIn(!!session?.user);
+      });
+      return () => subscription.unsubscribe();
     }
   }, []);
 
@@ -41,7 +56,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className={`glass-panel ${styles.sidebar}`}>
+    <aside className={`glass-panel ${styles.sidebar} ${!isLoggedIn ? styles.hidden : ''}`}>
       <div className={styles.brand}>
         <Hexagon size={32} color="var(--accent-blue)" />
         <h2>Taskly</h2>
