@@ -77,6 +77,8 @@ h1, h2, h3, h4 {
 button {
   font-family: inherit;
   cursor: pointer;
+  position: relative;
+  z-index: 2;
 }
 
 input, textarea, select {
@@ -117,14 +119,17 @@ input:-webkit-autofill:active{
 /* --- Layout --- */
 .app-container {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .main-content {
   flex: 1;
   padding: 2rem 3rem;
-  max-height: 100vh;
+  height: 100vh;
   overflow-y: auto;
+  position: relative;
+  z-index: 1;
 }
 
 /* --- Glassmorphism --- */
