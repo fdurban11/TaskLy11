@@ -75,7 +75,7 @@ export default function Auth({ onLogin }: { onLogin: (userId: string, email: str
         const mockId = 'mock_' + emailVal.replace(/[^a-zA-Z0-9]/g, '');
         localStorage.setItem('mockUserId', mockId);
         localStorage.setItem('mockUserEmail', emailVal);
-        onLogin(mockId, emailVal);
+        window.location.reload(); 
       }, 500);
       return;
     }

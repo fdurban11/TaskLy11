@@ -12,28 +12,35 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   React.useEffect(() => {
+    // Theme sync
     const savedTheme = localStorage.getItem('theme') as 'dark' | 'light';
     if (savedTheme) {
       setTheme(savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
-    } else {
-      setTheme('dark');
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('theme', 'dark');
     }
 
-    // Check if user is logged in
-    if (isMockMode) {
-      const mockId = localStorage.getItem('mockUserId');
-      setIsLoggedIn(!!mockId);
-    } else {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setIsLoggedIn(!!session?.user);
-      });
+    // Auth sync logic
+    const checkAuth = () => {
+      if (isMockMode) {
+        setIsLoggedIn(!!localStorage.getItem('mockUserId'));
+      } else {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          setIsLoggedIn(!!session?.user);
+        });
+      }
+    };
+
+    checkAuth();
+
+    if (!isMockMode) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         setIsLoggedIn(!!session?.user);
       });
       return () => subscription.unsubscribe();
+    } else {
+      // For mock mode, check every slightly to handle local login
+      const interval = setInterval(checkAuth, 1000);
+      return () => clearInterval(interval);
     }
   }, []);
 
@@ -48,6 +55,7 @@ export default function Sidebar() {
     e.preventDefault();
     if (isMockMode) {
       localStorage.removeItem('mockUserId');
+      localStorage.removeItem('mockUserEmail');
       window.location.reload();
     } else {
       await supabase.auth.signOut();
@@ -55,6 +63,9 @@ export default function Sidebar() {
     }
   };
 
+  // 🚪 HIDE SIDEBAR COMPLETELY ON LOGIN PAGE
+  // Instead of just checking if logged in, we also hide if showed Auth UI is likely active.
+  // In our app, root redirects to dashboard. If we aren't logged in, dashboard shows Auth.
   if (!isLoggedIn) return null;
 
   return (
@@ -95,7 +106,7 @@ export default function Sidebar() {
         <a href="#" className={styles.navLink} onClick={handleLogout}>
           <LogOut size={20} />
           <span>Logout</span>
-        </a>
+        </a >
       </div>
     </aside>
   );
