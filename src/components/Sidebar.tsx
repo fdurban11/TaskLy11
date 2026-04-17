@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
   const [theme, setTheme] = React.useState<'dark' | 'light'>('dark');
+  const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const pathname = usePathname();
 
   React.useEffect(() => {
@@ -20,7 +21,24 @@ export default function Sidebar() {
       document.documentElement.setAttribute('data-theme', 'dark');
       localStorage.setItem('theme', 'dark');
     }
+
+    if (isMockMode) {
+      setUserEmail("guest@taskly.app");
+      return;
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserEmail(session?.user?.email || null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email || null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const userName = userEmail ? userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1) : null;
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -46,6 +64,16 @@ export default function Sidebar() {
         <Hexagon size={32} color="var(--accent-blue)" />
         <h2>Taskly</h2>
       </div>
+
+      {userName && (
+        <div className={styles.userInfo}>
+          <div className={styles.userAvatar}>{userName.charAt(0)}</div>
+          <div className={styles.userDetails}>
+            <span className={styles.userName}>{userName}</span>
+            <span className={styles.userEmail}>{userEmail}</span>
+          </div>
+        </div>
+      )}
       
       <nav className={styles.navMenu}>
         <Link href="/dashboard" className={`${styles.navLink} ${pathname === '/dashboard' ? styles.active : ''}`}>
