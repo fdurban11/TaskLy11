@@ -55,8 +55,10 @@ export default function Sidebar() {
     }
   };
 
+  if (!isLoggedIn) return null;
+
   return (
-    <aside className={`glass-panel ${styles.sidebar} ${!isLoggedIn ? styles.hidden : ''}`}>
+    <aside className={`glass-panel ${styles.sidebar}`}>
       <div className={styles.brand}>
         <Hexagon size={32} color="var(--accent-blue)" />
         <h2>Taskly</h2>
