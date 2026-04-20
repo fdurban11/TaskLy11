@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import { LayoutDashboard, Settings, LogOut, Hexagon, FileText, Archive as ArchiveIcon, Calendar as CalendarIcon, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, Hexagon, FileText, Archive as ArchiveIcon, Calendar as CalendarIcon, Sun, Moon, User } from 'lucide-react';
 import { supabase, isMockMode } from '@/lib/supabaseClient';
 import styles from './Sidebar.module.css';
 import Link from 'next/link';
@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation';
 export default function Sidebar() {
   const [theme, setTheme] = React.useState<'dark' | 'light'>('dark');
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [displayName, setDisplayName] = React.useState('Guest');
   const pathname = usePathname();
 
   React.useEffect(() => {
@@ -18,6 +19,10 @@ export default function Sidebar() {
       setTheme(savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
+
+    // Display Name sync
+    const savedName = localStorage.getItem('taskly_display_name');
+    if (savedName) setDisplayName(savedName);
 
     // Auth sync logic
     const checkAuth = () => {
@@ -32,15 +37,37 @@ export default function Sidebar() {
 
     checkAuth();
 
+    // Listen for storage changes to update display name immediately
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'taskly_display_name') {
+        setDisplayName(e.newValue || 'Guest');
+      }
+    };
+
+    // Custom event listener for same-window updates
+    const handleDisplayNameUpdate = (e: any) => {
+      setDisplayName(e.detail || 'Guest');
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('taskly_name_updated', handleDisplayNameUpdate);
+
     if (!isMockMode) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         setIsLoggedIn(!!session?.user);
       });
-      return () => subscription.unsubscribe();
+      return () => {
+        subscription.unsubscribe();
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('taskly_name_updated', handleDisplayNameUpdate);
+      };
     } else {
-      // For mock mode, check every slightly to handle local login
       const interval = setInterval(checkAuth, 1000);
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('taskly_name_updated', handleDisplayNameUpdate);
+      };
     }
   }, []);
 
@@ -63,9 +90,6 @@ export default function Sidebar() {
     }
   };
 
-  // 🚪 HIDE SIDEBAR COMPLETELY ON LOGIN PAGE
-  // Instead of just checking if logged in, we also hide if showed Auth UI is likely active.
-  // In our app, root redirects to dashboard. If we aren't logged in, dashboard shows Auth.
   if (!isLoggedIn) return null;
 
   return (
@@ -73,6 +97,11 @@ export default function Sidebar() {
       <div className={styles.brand}>
         <Hexagon size={32} color="var(--accent-blue)" />
         <h2>Taskly</h2>
+      </div>
+
+      <div className={styles.greeting}>
+        <User size={16} />
+        <span>Hello, {displayName}</span>
       </div>
       
       <nav className={styles.navMenu}>
@@ -92,13 +121,13 @@ export default function Sidebar() {
           <ArchiveIcon size={20} />
           <span>Archived Tasks</span>
         </Link>
+        <button className={styles.navLink} onClick={toggleTheme} style={{ background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}>
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+        </button>
       </nav>
 
       <div className={styles.sidebarFooter}>
-        <button className={styles.navLink} onClick={toggleTheme} style={{ background: 'transparent', border: 'none', width: '100%', textAlign: 'left' }}>
-          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-          <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-        </button>
         <Link href="/settings" className={`${styles.navLink} ${pathname === '/settings' ? styles.active : ''}`}>
           <Settings size={20} />
           <span>Settings</span>
