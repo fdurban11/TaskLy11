@@ -38,18 +38,20 @@ export default function SettingsApp({ userId, userEmail }: { userId: string; use
   // Load from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('taskly_settings');
-    if (saved) {
+    const savedName = localStorage.getItem('taskly_display_name');
+    
+    if (saved || savedName) {
       try {
-        const parsed = JSON.parse(saved);
-        setSettings(prev => ({ ...prev, ...parsed }));
+        const parsed = saved ? JSON.parse(saved) : {};
+        setSettings(prev => ({ 
+          ...prev, 
+          ...parsed,
+          displayName: savedName || parsed.displayName || prev.displayName 
+        }));
       } catch (e) {
         console.error("Failed to parse settings", e);
       }
     }
-    
-    // Explicitly check for display name for sidebar sync
-    const savedName = localStorage.getItem('taskly_display_name');
-    if (savedName) setSettings(prev => ({ ...prev, displayName: savedName }));
   }, [userEmail]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -69,7 +71,11 @@ export default function SettingsApp({ userId, userEmail }: { userId: string; use
   };
 
   const handleProfileSave = () => {
-    saveToStorage({ displayName: settings.displayName });
+    if (!settings.displayName.trim()) {
+      showToast('Display name cannot be empty!', 'error');
+      return;
+    }
+    saveToStorage({ displayName: settings.displayName.trim() });
     showToast('Profile updated successfully!');
   };
 
