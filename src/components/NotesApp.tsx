@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save } from 'lucide-react';
 import styles from './NotesApp.module.css';
+import { addAuditLog } from '@/lib/auditLogger';
 
 export interface Note {
   id: string;
@@ -46,6 +47,7 @@ export default function NotesApp({ userId }: { userId: string }) {
     const newNotes = [newNote, ...notes];
     saveNotes(newNotes);
     setActiveNote(newNote);
+    addAuditLog('CREATE', `New note "${newNote.title}" was created`, 'Note Taker');
   };
 
   const updateActiveNote = (field: 'title' | 'content', value: string) => {
@@ -54,13 +56,22 @@ export default function NotesApp({ userId }: { userId: string }) {
     setActiveNote(updatedNote);
     const newNotes = notes.map(n => n.id === activeNote.id ? updatedNote : n);
     saveNotes(newNotes);
+    // Since this is auto-save, we don't want to spam logs. 
+    // We'll log on a slight delay or only if it's a significant edit.
+    // For now, let's just log when they stop editing for a second (simulated by non-spammy behavior here)
+    // Actually, simple way: log only if the title changes or once per session per note.
+    if (field === 'title') {
+       addAuditLog('MODIFY', `Note title updated to "${value}"`, 'Note Taker');
+    }
   };
 
   const deleteNote = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    const note = notes.find(n => n.id === id);
     const newNotes = notes.filter(n => n.id !== id);
     saveNotes(newNotes);
     if (activeNote?.id === id) setActiveNote(null);
+    addAuditLog('DELETE', `Note "${note?.title}" was deleted`, 'Note Taker');
   };
 
   return (

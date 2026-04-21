@@ -1,0 +1,57 @@
+﻿
+> taskly-app@0.1.0 build
+> next build
+
+Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 3.4s
+  Running TypeScript ...
+node.exe : Failed to type 
+check.
+At line:1 char:1
++ & "C:\/node.exe" "C:\/node_
+modules/npm/bin/npm-cli.js" 
+run build
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (Failed   
+  to type check.:String) [   
+ ], RemoteException
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+
+./src/components/TaskCard.tsx
+:74:43
+Type error: This condition 
+will always return true 
+since this function is 
+always defined. Did you mean 
+to call it instead?
+
+  [90m72 |[0m             
+<[33mEdit[0m 
+size={[35m16[0m} />
+  [90m73 |[0m           
+</button>
+[31m[1m>[0m [90m74 |[0m 
+          {task.status !== 
+[32m'Completed'[0m && 
+onStatusChange && (
+  [90m   |[0m              
+                             
+[31m[1m^[0m
+  [90m75 |[0m             
+<button 
+  [90m76 |[0m              
+ 
+className={styles.actionBtn} 
+  [90m77 |[0m              
+ onClick={handleNextStatus}
+Next.js build worker exited 
+with code: 1 and signal: null
+

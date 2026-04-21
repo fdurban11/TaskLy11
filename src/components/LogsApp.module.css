@@ -1,0 +1,220 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: 100%;
+  animation: fadeIn 0.4s ease-out;
+  padding-bottom: 40px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.titleArea {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.headerIcon {
+  color: var(--primary);
+  width: 40px;
+  height: 40px;
+}
+
+.titleArea h1 {
+  font-size: 2.2rem;
+  background: linear-gradient(90deg, var(--text-highlight), var(--text-primary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+.lockIcon {
+  color: var(--primary);
+}
+
+.toolbar {
+  display: flex;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.searchWrapper, .filterWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchWrapper {
+  flex: 1;
+}
+
+.searchIcon, .filterIcon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-primary);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.searchInput, .filterSelect {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 10px 12px 10px 40px;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus, .filterSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(102, 252, 241, 0.05);
+}
+
+.logList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.logCard {
+  background: var(--surface-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.logCard:hover {
+  border-color: rgba(102, 252, 241, 0.2);
+  transform: translateX(4px);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.logLeft {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.badgeCreate { background: rgba(0, 229, 204, 0.15); color: #00e5cc; border: 1px solid rgba(0, 229, 204, 0.3); }
+.badgeDelete { background: rgba(216, 17, 89, 0.15); color: #d81159; border: 1px solid rgba(216, 17, 89, 0.3); }
+.badgeModify { background: rgba(58, 134, 255, 0.15); color: #3a86ff; border: 1px solid rgba(3a, 86, ff, 0.3); }
+.badgeLogin { background: rgba(255, 190, 11, 0.15); color: #ffbe0b; border: 1px solid rgba(255, 190, 11, 0.3); }
+.badgeLogout { background: rgba(255, 255, 255, 0.1); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); }
+.badgeSettings { background: rgba(255, 255, 255, 0.08); color: #cccccc; border: 1px solid rgba(255, 255, 255, 0.15); }
+.badgeDefault { background: rgba(255, 255, 255, 0.05); color: #888888; }
+
+.timestamp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  opacity: 0.5;
+}
+
+.logBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.description {
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.source {
+  font-size: 0.8rem;
+  color: var(--primary);
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+.loadMore {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  margin-top: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.loadMore:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 80px 20px;
+  text-align: center;
+  color: var(--text-primary);
+  opacity: 0.6;
+}
+
+.emptyState h3 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.emptyState p {
+  font-size: 0.95rem;
+  max-width: 300px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+  }
+}

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './SettingsApp.module.css';
 import { User, Bell, Shield, Trash2, Mail, Check, X, Lock, Key, AlertTriangle } from 'lucide-react';
 import { supabase, isMockMode } from '@/lib/supabaseClient';
+import { addAuditLog } from '@/lib/auditLogger';
 
 interface SettingsState {
   displayName: string;
@@ -77,6 +78,7 @@ export default function SettingsApp({ userId, userEmail }: { userId: string; use
     }
     saveToStorage({ displayName: settings.displayName.trim() });
     showToast('Profile updated successfully!');
+    addAuditLog('SETTINGS_CHANGE', `Display name changed to "${settings.displayName}"`, 'Settings Page');
   };
 
   const handleGmailSave = () => {
@@ -85,12 +87,19 @@ export default function SettingsApp({ userId, userEmail }: { userId: string; use
       remindersEnabled: settings.remindersEnabled 
     });
     showToast('Gmail connectivity saved!');
+    addAuditLog('SETTINGS_CHANGE', `Gmail settings updated (${settings.gmail})`, 'Settings Page');
   };
 
   const handleToggleChange = (key: keyof SettingsState) => {
     const newVal = !settings[key];
     saveToStorage({ [key]: newVal });
     showToast(`${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} ${newVal ? 'enabled' : 'disabled'}`);
+    
+    if (key === '2faEnabled') {
+      addAuditLog('2FA_TOGGLE', `Two-factor authentication ${newVal ? 'enabled' : 'disabled'}`, 'Settings Page');
+    } else {
+      addAuditLog('SETTINGS_CHANGE', `${key} toggled to ${newVal}`, 'Settings Page');
+    }
   };
 
   const handlePasswordChange = (e: React.FormEvent) => {
@@ -107,11 +116,13 @@ export default function SettingsApp({ userId, userEmail }: { userId: string; use
     showToast('Password changed successfully!');
     setIsPasswordModalOpen(false);
     setPasswords({ current: '', new: '', confirm: '' });
+    addAuditLog('PASSWORD_CHANGE', 'Account password was successfully changed', 'Settings Page');
   };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== 'DELETE') return;
     
+    addAuditLog('DELETE', 'Account deletion initiated', 'Settings Page');
     showToast('Account data cleared. Redirecting...');
     
     setTimeout(() => {

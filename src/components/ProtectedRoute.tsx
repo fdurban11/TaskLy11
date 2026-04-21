@@ -65,6 +65,12 @@ export default function ProtectedRoute({ children }: { children: (userId: string
 
   // --- RENDERING ---
 
+  const handleLogin = React.useCallback((id: string, mail: string) => {
+    setUserId(id);
+    setEmail(mail);
+    router.push('/dashboard');
+  }, [router]);
+
   // 1. Show a spinner while we check the auth status
   if (loading) {
     return <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}>Loading...</div>;
@@ -72,11 +78,7 @@ export default function ProtectedRoute({ children }: { children: (userId: string
 
   // 2. If no user is logged in, show the Login/Signup screen
   if (!userId || !email) {
-    return <Auth onLogin={(id, mail) => { 
-      setUserId(id); 
-      setEmail(mail); 
-      router.push('/dashboard');
-    }} />;
+    return <Auth onLogin={handleLogin} />;
   }
   
   // 3. If everything is fine, show the private content

@@ -4,6 +4,7 @@ import { Plus, X, ListTodo, Activity, CheckCircle2, Bell, Filter } from 'lucide-
 import styles from './TaskBoard.module.css';
 import TaskCard from './TaskCard';
 import { supabase, isMockMode, Task } from '@/lib/supabaseClient';
+import { addAuditLog } from '@/lib/auditLogger';
 
 const generateMockTasks = (userId: string): Task[] => {
   const today = new Date();
@@ -197,6 +198,7 @@ export default function TaskBoard({ userId, userEmail }: { userId: string; userE
         const { due_time: _dt, ...dbPayload } = editedTask as Task;
         await supabase.from('tasks').update(dbPayload).eq('id', newTask.id);
       }
+      addAuditLog('MODIFY', `Task "${newTask.title}" was updated`, 'TaskBoard');
     } else {
       // Create logic
       const dueDateStr = newTask.due_time
@@ -243,6 +245,7 @@ export default function TaskBoard({ userId, userEmail }: { userId: string; userE
           }).catch(err => console.error("Failed to trigger email:", err));
         }
       }
+      addAuditLog('CREATE', `New task "${newTask.title}" was created`, 'TaskBoard');
     }
 
     setNewTask(defaultTask);
@@ -265,11 +268,20 @@ export default function TaskBoard({ userId, userEmail }: { userId: string; userE
 
     syncMock(tasks.map(t => t.id === id ? { ...t, status } : t));
     if (!isMockMode) await supabase.from('tasks').update({ status }).eq('id', id);
+    
+    const task = tasks.find(t => t.id === id);
+    if (status === 'Completed') {
+      addAuditLog('COMPLETE', `Task "${task?.title}" was marked as completed`, 'TaskBoard');
+    } else {
+      addAuditLog('MODIFY', `Task "${task?.title}" status changed to ${status}`, 'TaskBoard');
+    }
   };
 
   const deleteTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
     syncMock(tasks.filter(t => t.id !== id));
     if (!isMockMode) await supabase.from('tasks').delete().eq('id', id);
+    addAuditLog('DELETE', `Task "${task?.title}" was deleted`, 'TaskBoard');
   };
 
   const openEditModal = (task: Task) => {
@@ -326,8 +338,10 @@ export default function TaskBoard({ userId, userEmail }: { userId: string; userE
 
 
   const archiveTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
     syncMock(tasks.map(t => t.id === id ? { ...t, archived: true } : t));
     if (!isMockMode) await supabase.from('tasks').update({ archived: true }).eq('id', id);
+    addAuditLog('ARCHIVE', `Task "${task?.title}" was archived`, 'TaskBoard');
   };
 
   const RenderColumn = ({ title, status, icon: Icon, titleClass }: { title: string; status: Task['status']; icon: any; titleClass: string }) => {

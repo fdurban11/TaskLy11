@@ -1,10 +1,11 @@
 "use client";
 import React from 'react';
-import { LayoutDashboard, Settings, LogOut, Hexagon, FileText, Archive as ArchiveIcon, Calendar as CalendarIcon, Sun, Moon, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, Hexagon, FileText, Archive as ArchiveIcon, Calendar as CalendarIcon, Sun, Moon, User as UserIcon, Activity } from 'lucide-react';
 import { supabase, isMockMode } from '@/lib/supabaseClient';
 import styles from './Sidebar.module.css';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { addAuditLog } from '@/lib/auditLogger';
 
 export default function Sidebar() {
   const [theme, setTheme] = React.useState<'dark' | 'light'>('dark');
@@ -105,6 +106,7 @@ export default function Sidebar() {
     setTheme(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
+    addAuditLog('SETTINGS_CHANGE', `Application theme changed to ${newTheme} mode`, 'Sidebar');
   };
 
   const handleLogout = async (e: React.MouseEvent) => {
@@ -113,9 +115,11 @@ export default function Sidebar() {
       localStorage.removeItem('mockUserId');
       localStorage.removeItem('mockUserEmail');
       localStorage.removeItem('taskly_display_name');
+      addAuditLog('LOGOUT', 'User logged out (Mock Mode)', 'Sidebar');
       window.location.reload();
     } else {
       await supabase.auth.signOut();
+      addAuditLog('LOGOUT', 'User logged out', 'Sidebar');
       window.location.reload();
     }
   };
@@ -140,7 +144,7 @@ export default function Sidebar() {
       <nav className={styles.navMenu}>
         <Link href="/dashboard" className={`${styles.navLink} ${pathname === '/dashboard' ? styles.active : ''}`}>
           <LayoutDashboard size={20} />
-          <span>Dashboard</span>
+          <span>Workspace</span>
         </Link>
         <Link href="/notes" className={`${styles.navLink} ${pathname === '/notes' ? styles.active : ''}`}>
           <FileText size={20} />
@@ -153,6 +157,10 @@ export default function Sidebar() {
         <Link href="/archive" className={`${styles.navLink} ${pathname === '/archive' ? styles.active : ''}`}>
           <ArchiveIcon size={20} />
           <span>Archived Tasks</span>
+        </Link>
+        <Link href="/logs" className={`${styles.navLink} ${pathname === '/logs' ? styles.active : ''}`}>
+          <Activity size={20} />
+          <span>Audit Logs</span>
         </Link>
         <button className={styles.navLink} onClick={toggleTheme} style={{ background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}>
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
@@ -168,7 +176,7 @@ export default function Sidebar() {
         <a href="#" className={styles.navLink} onClick={handleLogout}>
           <LogOut size={20} />
           <span>Logout</span>
-        </a >
+        </a>
       </div>
     </aside>
   );

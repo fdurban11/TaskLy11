@@ -16,7 +16,7 @@
 }
 
 .brand h2 {
-  font-size: 1.8  rem;
+  font-size: 1.8rem;
   background: linear-gradient(90deg, var(--accent-blue), var(--text-highlight));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -28,7 +28,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: rgba(31, 40, 51, 0.4); /* Dark Slate/Teal hint */
+  background: rgba(247, 248, 248, 0.4); /* Dark Slate/Teal hint */
   border-radius: 50px;
   color: var(--accent-blue); /* Teal text */
   font-size: 0.9rem;

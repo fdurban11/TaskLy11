@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase, isMockMode } from '@/lib/supabaseClient';
 import styles from './Auth.module.css';
 import { Hexagon, CheckCircle2, Mail } from 'lucide-react';
+import { addAuditLog } from '@/lib/auditLogger';
 
 export default function Auth({ onLogin }: { onLogin: (userId: string, email: string) => void }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -47,8 +48,13 @@ export default function Auth({ onLogin }: { onLogin: (userId: string, email: str
           setSupabaseError(true);
         });
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) onLogin(session.user.id, session.user.email || '');
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+          onLogin(session.user.id, session.user.email || '');
+          if (event === 'SIGNED_IN') {
+             addAuditLog('LOGIN', `User session started (${session.user.email})`, 'Login Page');
+          }
+        }
       });
       return () => {
         clearTimeout(timeout);
@@ -75,6 +81,7 @@ export default function Auth({ onLogin }: { onLogin: (userId: string, email: str
         const mockId = 'mock_' + emailVal.replace(/[^a-zA-Z0-9]/g, '');
         localStorage.setItem('mockUserId', mockId);
         localStorage.setItem('mockUserEmail', emailVal);
+        addAuditLog('LOGIN', `User logged in (Mock Mode: ${emailVal})`, 'Login Page');
         window.location.reload(); 
       }, 500);
       return;
